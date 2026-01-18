@@ -1,17 +1,21 @@
 package com.bookln.bookln.controller;
 
+import com.bookln.bookln.model.Court;
 import com.bookln.bookln.service.AuthService;
+import com.bookln.bookln.service.CourtDataService;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.view.RedirectView;
 
 @Controller
 public class PageController {
@@ -19,43 +23,44 @@ public class PageController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private CourtDataService courtService;
+
+    // --- Simple Pages ---
+
     @GetMapping("/")
     public String home() {
-        return "forward:/index.html";
+        return "index"; // Looks for templates/index.html
     }
 
     @GetMapping("/about")
     public String about() {
-        return "forward:/about.html";
+        return "about"; // Looks for templates/about.html
     }
 
     @GetMapping("/contact")
     public String contact() {
-        return "forward:/contact.html";
+        return "contact"; // Looks for templates/contact.html
     }
 
-    // --- Login Logic ---
+    // --- Login & Signup ---
 
     @GetMapping("/login")
     public String loginPage(HttpSession session) {
         if (session.getAttribute("currentUser") != null) {
             return "redirect:/indoor";
         }
-        return "forward:/login.html";
+        return "login";
     }
 
     @PostMapping("/login")
     public String handleLogin(@RequestParam String username,
             @RequestParam String password,
             HttpSession session) {
-
         if (authService.validateLogin(username, password)) {
             session.setAttribute("currentUser", username);
             return "redirect:/indoor";
         } else {
-            // Failed login - redirect back to login page
-            // (Since no thymeleaf, we can't easily show error messages dynamically without
-            // URL params)
             return "redirect:/login?error=true";
         }
     }
@@ -66,11 +71,9 @@ public class PageController {
         return "redirect:/login";
     }
 
-    // --- Signup Logic ---
-
     @GetMapping("/signup")
     public String signupPage() {
-        return "forward:/signup.html";
+        return "signup";
     }
 
     @PostMapping("/signup")
@@ -79,24 +82,30 @@ public class PageController {
             @RequestParam String username,
             @RequestParam String email,
             @RequestParam String password) {
-
         authService.registerUser(firstname, lastname, username, email, password);
         return "redirect:/login";
     }
 
-    // --- Restricted Area Logic ---
+    // --- The Main DSA Page (Indoor) ---
 
     @GetMapping("/indoor")
-    public String indoor(HttpSession session) {
-        // SECURITY CHECK: If no user in session, redirect to login
+    public String indoor(HttpSession session,
+            @RequestParam(value = "search", required = false) String search,
+            Model model) {
+
+        // 1. Security Check
         if (session.getAttribute("currentUser") == null) {
             return "redirect:/login";
         }
-        // If logged in, serve the static file
-        return "forward:/indoor.html";
-    }
 
-    // --- Booking Logic (WhatsApp Redirect) ---
+        // 2. Perform Linear Search (DSA Logic)
+        Court[] results = courtService.searchCourts(search);
+
+        // 3. Send data to Thymeleaf
+        model.addAttribute("courts", results);
+
+        return "indoor";
+    }
 
     @GetMapping("/book")
     public RedirectView bookNow(@RequestParam("date") String dateStr,
@@ -105,33 +114,43 @@ public class PageController {
             @RequestParam("number") String phoneNumber,
             HttpSession session) {
 
+        // 1. Check if user is logged in
         if (session.getAttribute("currentUser") == null) {
             return new RedirectView("/login");
         }
 
         try {
-            // Basic date check logic mimicking your Python code
+            // --- THE FIX IS HERE ---
+            // Remove all spaces, dashes, and dots from the phone number
+            String cleanNumber = phoneNumber.replaceAll("[^0-9]", "");
+
+            // Validate Date
             LocalDate selectedDate = LocalDate.parse(dateStr);
             if (selectedDate.isBefore(LocalDate.now())) {
-                System.out.println("Error: Past date selected");
+                System.out.println("Error: User tried to book a past date.");
                 return new RedirectView("/indoor");
             }
 
-            // Fetch user details from the 'Dictionary' in AuthService
+            // Get User Info
             String firstName = authService.getUserData().get("firstname");
             String lastName = authService.getUserData().get("lastname");
 
+            // Format Message
             String message = String.format(
-                    "Hello! I'm %s %s I would like to book the %s for %s & Time Slot %s slot. Can you confirm the availability and price?",
+                    "Hello! I'm %s %s. I would like to book the %s for %s, Time Slot: %s. Can you confirm availability?",
                     firstName, lastName, courtName, dateStr, timeSlot);
 
             String encodedMessage = URLEncoder.encode(message, StandardCharsets.UTF_8);
-            String whatsappUrl = String.format("https://api.whatsapp.com/send?phone=%s&text=%s", phoneNumber,
+
+            // Create WhatsApp URL with the CLEAN number
+            String whatsappUrl = String.format("https://api.whatsapp.com/send?phone=%s&text=%s", cleanNumber,
                     encodedMessage);
 
             return new RedirectView(whatsappUrl);
 
         } catch (Exception e) {
+            // Print the actual error to your console
+            System.out.println("Booking Failed! Error: " + e.getMessage());
             e.printStackTrace();
             return new RedirectView("/indoor");
         }
