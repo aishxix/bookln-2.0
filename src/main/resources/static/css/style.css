@@ -12,6 +12,9 @@ span {
   font-weight: bold;
 }
 
+#LC {
+  color: #000000;
+}
 a {
   color: #fff;
   text-decoration: none;
@@ -323,6 +326,10 @@ footer {
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 .abt-p {
   color: black;
