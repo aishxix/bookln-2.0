@@ -91,6 +91,7 @@ public class PageController {
     @GetMapping("/indoor")
     public String indoor(HttpSession session,
             @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sort", required = false) String sort, // NEW PARAM
             Model model) {
 
         // 1. Security Check
@@ -98,10 +99,17 @@ public class PageController {
             return "redirect:/login";
         }
 
-        // 2. Perform Linear Search (DSA Logic)
+        // 2. Search (Linear Search)
+        // This returns an array of matches (or all courts if search is empty)
         Court[] results = courtService.searchCourts(search);
 
-        // 3. Send data to Thymeleaf
+        // 3. Sort (Bubble Sort)
+        // If the user picked a sort order, we run the algorithm on the results array
+        if (sort != null && !sort.isEmpty()) {
+            courtService.sortCourts(results, sort);
+        }
+
+        // 4. Pass final data to HTML
         model.addAttribute("courts", results);
 
         return "indoor";
