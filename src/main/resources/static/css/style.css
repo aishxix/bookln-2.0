@@ -8,7 +8,7 @@
 
 span {
   font-family: Arial, Helvetica, sans-serif;
-  color: wheat;
+  color: white;
   font-weight: bold;
 }
 
@@ -21,13 +21,13 @@ a {
   transition: color 0.5s;
 }
 li:hover {
-  background: black;
+  background: rgb(5, 63, 65);
   transform: scale(0.9);
 }
 
 li {
   text-align: center;
-  background-color: #161515;
+  background-color: transparent;
   border-radius: 15px;
   width: 150px;
   height: 50px;
@@ -77,6 +77,7 @@ h1 {
   justify-content: space-between;
   padding: 15px 20px;
   background-image: -webkit-linear-gradient(transparent);
+  border: none;
 }
 
 .header-content {
@@ -147,7 +148,6 @@ h1 {
 }
 
 .btn {
-  background-color: black;
   color: rgb(255, 255, 255);
   border: none;
   padding: 10px 20px;
@@ -160,7 +160,7 @@ h1 {
 
 .btn:hover {
   color: wheat;
-  background-color: rgb(70, 146, 52);
+  background-color: black;
   cursor: pointer;
 }
 
@@ -214,7 +214,7 @@ label {
   font-style: normal;
   font-size: 100px;
   align-content: center;
-  background: linear-gradient(to right, black, rgb(5, 49, 70));
+  background: linear-gradient(to right, white, rgb(5, 77, 90));
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
