@@ -1,5 +1,6 @@
 package com.bookln.bookln.controller;
 
+import com.bookln.bookln.model.SystemConfig;
 import com.bookln.bookln.model.Court;
 import com.bookln.bookln.service.AuthService;
 import com.bookln.bookln.service.CourtDataService;
@@ -22,50 +23,6 @@ import com.bookln.bookln.service.BookingSubject;
 
 @Controller
 public class PageController {
-    // 1. Singleton Pattern Implementation
-    public static class SystemConfig {
-        private static SystemConfig instance = new SystemConfig();
-        private String appName = "Bookln Indoor Management System";
-
-        private SystemConfig() {
-        } // Private constructor
-
-        public static SystemConfig getInstance() {
-            return instance;
-        }
-
-        public String getAppName() {
-            return appName;
-        }
-    }
-
-    // Existing routes (/, /login, /signup, etc.) go here...
-
-    // New Booking Route tying the patterns together
-    @GetMapping("/book")
-    public String handleBooking(
-            @RequestParam("court") String courtName,
-            @RequestParam("date") String date,
-            @RequestParam("time") String time) {
-
-        // Log Singleton usage
-        System.out.println("Processing booking via: " + SystemConfig.getInstance().getAppName());
-
-        // 2. Builder Pattern Implementation
-        Booking newBooking = new Booking.BookingBuilder()
-                .setCourtName(courtName)
-                .setDate(date)
-                .setTime(time)
-                .build();
-
-        // 3. Observer Pattern Implementation
-        BookingSubject subject = new BookingSubject();
-        subject.notifyAllObservers(
-                "New booking received for " + newBooking.getCourtName() + " at " + newBooking.getTime());
-
-        // Redirect back to indoor courts after booking
-        return "redirect:/indoor";
-    }
 
     @Autowired
     private AuthService authService;
@@ -169,6 +126,21 @@ public class PageController {
             @RequestParam("number") String phoneNumber,
             HttpSession session) {
 
+        // 1. Singleton Pattern Implementation
+        System.out.println("Processing booking via: " + SystemConfig.getInstance().getAppName());
+
+        // 2. Builder Pattern Implementation
+        Booking newBooking = new Booking.BookingBuilder()
+                .setCourtName(courtName)
+                .setDate(dateStr)
+                .setTime(timeSlot)
+                .build();
+
+        // 3. Observer Pattern Implementation
+        BookingSubject subject = new BookingSubject();
+        subject.notifyAllObservers(
+                "New booking received for " + newBooking.getCourtName() + " at " + newBooking.getTime());
+
         // 1. Check if user is logged in
         if (session.getAttribute("currentUser") == null) {
             return new RedirectView("/login");
@@ -209,5 +181,6 @@ public class PageController {
             e.printStackTrace();
             return new RedirectView("/indoor");
         }
+
     }
 }
