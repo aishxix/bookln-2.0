@@ -17,8 +17,55 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.view.RedirectView;
 
+import com.bookln.bookln.model.Booking;
+import com.bookln.bookln.service.BookingSubject;
+
 @Controller
 public class PageController {
+    // 1. Singleton Pattern Implementation
+    public static class SystemConfig {
+        private static SystemConfig instance = new SystemConfig();
+        private String appName = "Bookln Indoor Management System";
+
+        private SystemConfig() {
+        } // Private constructor
+
+        public static SystemConfig getInstance() {
+            return instance;
+        }
+
+        public String getAppName() {
+            return appName;
+        }
+    }
+
+    // Existing routes (/, /login, /signup, etc.) go here...
+
+    // New Booking Route tying the patterns together
+    @GetMapping("/book")
+    public String handleBooking(
+            @RequestParam("court") String courtName,
+            @RequestParam("date") String date,
+            @RequestParam("time") String time) {
+
+        // Log Singleton usage
+        System.out.println("Processing booking via: " + SystemConfig.getInstance().getAppName());
+
+        // 2. Builder Pattern Implementation
+        Booking newBooking = new Booking.BookingBuilder()
+                .setCourtName(courtName)
+                .setDate(date)
+                .setTime(time)
+                .build();
+
+        // 3. Observer Pattern Implementation
+        BookingSubject subject = new BookingSubject();
+        subject.notifyAllObservers(
+                "New booking received for " + newBooking.getCourtName() + " at " + newBooking.getTime());
+
+        // Redirect back to indoor courts after booking
+        return "redirect:/indoor";
+    }
 
     @Autowired
     private AuthService authService;
